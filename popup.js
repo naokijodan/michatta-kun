@@ -4,15 +4,25 @@ const MAX_ITEMS = 10000;
 // 商品IDをURLまたはIDから抽出
 function extractItemId(input) {
   input = input.trim();
-  // URLからID抽出
-  const urlMatch = input.match(/\/item\/([a-zA-Z0-9]+)/);
-  if (urlMatch) {
-    return urlMatch[1];
-  }
-  // IDのみの場合（mで始まる英数字）
+
+  // 通常商品URL: /item/m12345678901
+  const itemMatch = input.match(/\/item\/([a-zA-Z0-9]+)/);
+  if (itemMatch) return itemMatch[1];
+
+  // メルカリショップURL: /shops/product/xxxx
+  const shopMatch = input.match(/\/shops\/product\/([a-zA-Z0-9]+)/);
+  if (shopMatch) return 'shop_' + shopMatch[1];
+
+  // IDのみの場合（mで始まる通常商品ID）
   if (/^m[a-zA-Z0-9]+$/.test(input)) {
     return input;
   }
+
+  // ショップ商品ID（shop_プレフィックスなし）
+  if (/^[a-zA-Z0-9]{20,}$/.test(input)) {
+    return 'shop_' + input;
+  }
+
   return null;
 }
 
@@ -95,5 +105,17 @@ async function registerItems() {
 // イベント設定
 document.getElementById('registerBtn').addEventListener('click', registerItems);
 
+// デバッグ用：登録済みIDを確認
+async function showDebugInfo() {
+  const viewedItems = await getViewedItems();
+  const ids = Object.keys(viewedItems);
+  console.log('登録済みID:', ids);
+  console.log('件数:', ids.length);
+  if (ids.length > 0) {
+    console.log('最初の5件:', ids.slice(0, 5));
+  }
+}
+
 // 初期化
 updateCount();
+showDebugInfo();
