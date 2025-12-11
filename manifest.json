@@ -1,12 +1,20 @@
 {
   "manifest_version": 3,
   "name": "メルカリ閲覧済みチェッカー",
-  "version": "1.1",
+  "version": "1.2",
   "description": "メルカリで以前閲覧した商品を検索一覧でマークします",
   "permissions": ["storage"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "メルカリ閲覧済みチェッカー"
+    "default_title": "メルカリ閲覧済みチェッカー",
+    "default_icon": {
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "content_scripts": [
     {
