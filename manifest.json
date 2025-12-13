@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "フリマ閲覧済みチェッカー",
+  "name": "閲覧済み商品チェッカー",
   "version": "1.4",
-  "description": "フリマサイトで以前閲覧した商品を検索一覧でマークします",
+  "description": "以前閲覧した商品を検索一覧でマークします",
   "permissions": ["storage"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "フリマ閲覧済みチェッカー",
+    "default_title": "閲覧済み商品チェッカー",
     "default_icon": {
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
