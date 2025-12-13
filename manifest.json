@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "閲覧済み商品チェッカー",
-  "version": "1.4",
+  "version": "1.5",
   "description": "以前閲覧した商品を検索一覧でマークします",
   "permissions": ["storage"],
   "action": {
