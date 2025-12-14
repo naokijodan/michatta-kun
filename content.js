@@ -111,10 +111,22 @@
     return false;
   }
 
-  // 検索一覧の商品にマークを付ける（商品ページでは実行しない）
+  // 一覧用バッジを表示しないページかどうかを判定
+  function isExcludedPage() {
+    const url = window.location.href;
+    // 取引ページ
+    if (/jp\.mercari\.com\/transaction\//.test(url)) return true;
+    // お知らせページ
+    if (/jp\.mercari\.com\/notifications/.test(url)) return true;
+    // マイページ
+    if (/jp\.mercari\.com\/mypage\//.test(url)) return true;
+    return false;
+  }
+
+  // 検索一覧の商品にマークを付ける（商品ページ・除外ページでは実行しない）
   async function markViewedItemsInList() {
-    // 商品ページでは一覧用バッジを表示しない
-    if (isProductPage()) {
+    // 商品ページ・除外ページでは一覧用バッジを表示しない
+    if (isProductPage() || isExcludedPage()) {
       return;
     }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "みちゃった君",
-  "version": "1.6",
+  "version": "1.7",
   "description": "以前閲覧した商品を検索一覧でマークします",
   "permissions": ["storage"],
   "action": {
