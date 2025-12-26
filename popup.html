@@ -6,7 +6,7 @@
   <title>みちゃった君</title>
   <style>
     body {
-      width: 320px;
+      width: 340px;
       padding: 16px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 14px;
@@ -14,6 +14,13 @@
     h1 {
       font-size: 16px;
       margin: 0 0 16px 0;
+      color: #333;
+    }
+    h2 {
+      font-size: 14px;
+      margin: 16px 0 12px 0;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
       color: #333;
     }
     .section {
@@ -82,6 +89,81 @@
       font-size: 12px;
       color: #666;
     }
+    /* アラート設定 */
+    .alert-section {
+      margin-bottom: 12px;
+    }
+    .alert-section label {
+      font-weight: normal;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .alert-section .alert-title {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .alert-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-row input[type="number"] {
+      width: 70px;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .alert-row input[type="number"]:focus {
+      outline: none;
+      border-color: #FF5722;
+    }
+    .alert-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+    }
+    .alert-row span {
+      font-size: 12px;
+      color: #666;
+    }
+    .save-btn {
+      margin-top: 12px;
+      background-color: #2196F3;
+    }
+    .save-btn:hover {
+      background-color: #1976D2;
+    }
+    /* 会員専用機能 */
+    .premium-info {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .premium-unlocked {
+      font-size: 13px;
+      color: #2E7D32;
+      font-weight: bold;
+      padding: 8px;
+      background: #E8F5E9;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .unlock-btn {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    #premiumPass {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    #alertSettings.locked {
+      opacity: 0.5;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -96,6 +178,72 @@
   <button id="registerBtn">登録する</button>
 
   <div id="status" class="status"></div>
+
+  <h2>会員専用機能</h2>
+
+  <div class="section" id="premiumSection">
+    <div id="premiumLocked">
+      <div class="premium-info">チェック機能・アラート機能を使うには会員パスが必要です</div>
+      <div class="alert-row">
+        <input type="text" id="premiumPass" placeholder="会員パスを入力">
+        <button id="unlockBtn" class="unlock-btn">解除</button>
+      </div>
+    </div>
+    <div id="premiumUnlocked" style="display: none;">
+      <div class="premium-unlocked">会員機能が有効です</div>
+    </div>
+  </div>
+
+  <h2>アラート設定</h2>
+  <div id="alertSettings">
+
+  <div class="alert-section">
+    <div class="alert-title">評価件数</div>
+    <div class="alert-row">
+      <input type="number" id="alertRatings" min="0" value="100">
+      <span>件以下でアラート</span>
+    </div>
+  </div>
+
+  <div class="alert-section">
+    <div class="alert-title">悪い評価の割合</div>
+    <div class="alert-row">
+      <input type="number" id="alertBadRate" min="0" max="100" value="5">
+      <span>%以上でアラート</span>
+    </div>
+  </div>
+
+  <div class="alert-section">
+    <div class="alert-title">出品経過日数</div>
+    <div class="alert-row">
+      <input type="number" id="alertListedDays" min="0" value="180">
+      <span>日以上でアラート</span>
+    </div>
+  </div>
+
+  <div class="alert-section">
+    <div class="alert-title">更新経過日数</div>
+    <div class="alert-row">
+      <input type="number" id="alertUpdatedDays" min="0" value="90">
+      <span>日以上でアラート</span>
+    </div>
+  </div>
+
+  <div class="alert-section">
+    <div class="alert-title">発送日数</div>
+    <div class="alert-row">
+      <input type="checkbox" id="alertShipping47">
+      <span>4〜7日でアラート</span>
+    </div>
+    <div class="alert-row" style="margin-top: 4px;">
+      <input type="checkbox" id="alertShipping8">
+      <span>8日以上でアラート</span>
+    </div>
+  </div>
+
+  <button id="saveAlertBtn" class="save-btn">設定を保存</button>
+
+  </div><!-- alertSettings -->
 
   <div class="stats">
     登録済み: <span id="count">0</span> 件

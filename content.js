@@ -3,13 +3,85 @@
   'use strict';
 
   const STORAGE_KEY = 'mercari_viewed_items';
+  const ALERT_SETTINGS_KEY = 'mercari_alert_settings';
+  const PREMIUM_KEY = 'mercari_premium_unlocked';
   const MAX_ITEMS = 100000; // 最大保存件数
+
+  // 会員機能が解除されているか確認
+  async function isPremiumUnlocked() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([PREMIUM_KEY], (result) => {
+        resolve(result[PREMIUM_KEY] === true);
+      });
+    });
+  }
+
+  // デフォルトのアラート設定
+  const DEFAULT_ALERT_SETTINGS = {
+    ratings: 100,
+    badRate: 5,
+    listedDays: 180,
+    updatedDays: 90,
+    shipping47: false,
+    shipping8: false
+  };
 
   // チェック用タブかどうか（_mcheck=1 パラメータがあるか）
   const isCheckTab = window.location.search.includes('_mcheck=1');
 
   // 表示中の詳細パネル（複数対応）
   let detailPanels = new Map(); // itemId -> panel
+
+  // アラート設定を取得
+  async function getAlertSettings() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([ALERT_SETTINGS_KEY], (result) => {
+        resolve({ ...DEFAULT_ALERT_SETTINGS, ...result[ALERT_SETTINGS_KEY] });
+      });
+    });
+  }
+
+  // アラート判定
+  function checkAlerts(details, settings) {
+    const alerts = [];
+
+    // 評価件数チェック（設定値以下でアラート）
+    if (settings.ratings > 0 && details.ratings <= settings.ratings) {
+      alerts.push({ type: 'ratings', message: `評価${details.ratings}件` });
+    }
+
+    // 悪い評価の割合チェック（設定値以上でアラート）
+    if (settings.badRate > 0 && details.badRatePercent >= settings.badRate) {
+      alerts.push({ type: 'badRate', message: `悪い評価${details.badRatePercent.toFixed(1)}%` });
+    }
+
+    // 出品経過日数チェック（設定値以上でアラート）
+    if (settings.listedDays > 0 && details.listedDays !== undefined && details.listedDays >= settings.listedDays) {
+      alerts.push({ type: 'listedDays', message: `出品から${details.listedDays}日経過` });
+    }
+
+    // 更新経過日数チェック（設定値以上でアラート）
+    if (settings.updatedDays > 0 && details.updatedDays !== undefined && details.updatedDays >= settings.updatedDays) {
+      alerts.push({ type: 'updatedDays', message: `更新から${details.updatedDays}日経過` });
+    }
+
+    // 発送日数チェック（4〜7日）
+    if (settings.shipping47 && details.shippingDays) {
+      if (details.shippingDays.includes('4') && details.shippingDays.includes('7')) {
+        alerts.push({ type: 'shipping', message: '発送4〜7日' });
+      }
+    }
+
+    // 発送日数チェック（8日以上）
+    if (settings.shipping8 && details.shippingDays) {
+      // 「8日以上」や数値が8以上の場合
+      if (details.shippingDays.includes('8') || /[89]\d*/.test(details.shippingDays)) {
+        alerts.push({ type: 'shipping', message: '発送8日以上' });
+      }
+    }
+
+    return alerts;
+  }
 
   // 現在のサイトを判定
   function getCurrentSite() {
@@ -250,6 +322,8 @@
       console.log('[みちゃった君] ショップモード:', isShop);
 
       let ratings = 0;
+      let goodRatings = 0;
+      let badRatings = 0;
 
       if (isShop) {
         // ===== メルカリショップの評価取得 =====
@@ -283,7 +357,8 @@
       } else {
         // ===== 通常メルカリの評価取得 =====
         // パターン1: data-testid="seller-link" から取得
-        // 形式: "出品者名\n\n873\n 871  2\n本人確認済"
+        // 形式: "出品者名\n\n732\n 730  2\n本人確認済"
+        // 732=合計, 730=良い, 2=悪い
         const sellerLink = document.querySelector('[data-testid="seller-link"]');
         console.log('[みちゃった君] seller-link:', sellerLink ? sellerLink.innerText.substring(0, 100) : 'なし');
 
@@ -296,6 +371,13 @@
             // 最初の数値が合計評価数
             ratings = parseInt(allNumbers[0], 10);
             console.log('[みちゃった君] seller-linkから評価取得:', ratings);
+
+            // 良い評価と悪い評価を取得（2番目と3番目の数値）
+            if (allNumbers.length >= 3) {
+              goodRatings = parseInt(allNumbers[1], 10);
+              badRatings = parseInt(allNumbers[2], 10);
+              console.log('[みちゃった君] 良い:', goodRatings, '悪い:', badRatings);
+            }
           }
         }
 
@@ -408,7 +490,10 @@
         }
       }
 
-      console.log('[みちゃった君] 取得結果 - 評価:', ratings, '発送:', shippingDays, '出品:', listedDays, '更新:', updatedDays);
+      // 悪い評価の割合を計算
+      const badRatePercent = ratings > 0 ? (badRatings / ratings * 100) : 0;
+
+      console.log('[みちゃった君] 取得結果 - 評価:', ratings, '良い:', goodRatings, '悪い:', badRatings, '悪い割合:', badRatePercent.toFixed(1) + '%', '発送:', shippingDays, '出品:', listedDays, '更新:', updatedDays);
 
       // 売り切れ判定
       const isSold = bodyText.includes('売り切れました') ||
@@ -417,6 +502,9 @@
 
       return {
         ratings,
+        goodRatings,
+        badRatings,
+        badRatePercent,
         shippingDays,
         listedDays,
         updatedDays,
@@ -487,13 +575,17 @@
 
     // 商品情報を取得（background script経由）
     fetchItemDetailsViaBackground(itemId, itemUrl)
-      .then(details => {
+      .then(async (details) => {
         // パネルが既に閉じられていたら何もしない
         if (!detailPanels.has(itemId)) return;
 
         if (!details) {
           throw new Error('詳細なし');
         }
+
+        // アラート設定を取得してチェック
+        const alertSettings = await getAlertSettings();
+        const alerts = checkAlerts(details, alertSettings);
 
         // 売り切れチェック
         const isSold = details.status === 'sold_out' || details.status === 'trading';
@@ -512,6 +604,25 @@
           dateInfo += '</div>';
         }
 
+        // 悪い評価の表示
+        let badRateInfo = '';
+        if (details.badRatings > 0) {
+          badRateInfo = `<div class="mercari-detail-row">
+            <span class="mercari-detail-label">悪い評価</span>
+            <span class="mercari-detail-value">${details.badRatings}件 (${details.badRatePercent.toFixed(1)}%)</span>
+          </div>`;
+        }
+
+        // アラート表示
+        let alertsHtml = '';
+        if (alerts.length > 0) {
+          alertsHtml = '<div class="mercari-detail-alerts">';
+          alerts.forEach(alert => {
+            alertsHtml += `<span class="mercari-detail-alert">${escapeHtml(alert.message)}</span>`;
+          });
+          alertsHtml += '</div>';
+        }
+
         panel.innerHTML = `
           <div class="mercari-detail-content">
             <div class="mercari-detail-header">
@@ -519,11 +630,13 @@
               ${soldBadge}
               <button class="mercari-detail-close-x" data-item-id="${itemId}">✕</button>
             </div>
+            ${alertsHtml}
             <div class="mercari-detail-body">
               <div class="mercari-detail-row">
                 <span class="mercari-detail-label">評価件数</span>
                 <span class="mercari-detail-value mercari-detail-ratings-count">${details.ratings}件</span>
               </div>
+              ${badRateInfo}
               <div class="mercari-detail-row">
                 <span class="mercari-detail-label">発送日数</span>
                 <span class="mercari-detail-value">${escapeHtml(details.shippingDays)}</span>
@@ -549,6 +662,9 @@
             chrome.runtime.sendMessage({ action: 'openInBackground', url: itemUrl });
           });
         }
+
+        // ドラッグで移動できるようにする
+        makeDraggable(panel, panel.querySelector('.mercari-detail-header'));
       })
       .catch(error => {
         console.error('[みちゃった君] エラー:', error);
@@ -593,10 +709,49 @@
     return div.innerHTML;
   }
 
-  // 商品カードにチェックボタンを追加
-  function addCheckButtons() {
+  // パネルをドラッグ可能にする
+  function makeDraggable(panel, handle) {
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    handle.style.cursor = 'move';
+
+    handle.addEventListener('mousedown', (e) => {
+      // 閉じるボタンをクリックした場合は無視
+      if (e.target.classList.contains('mercari-detail-close-x')) return;
+
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      initialLeft = panel.offsetLeft;
+      initialTop = panel.offsetTop;
+
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      panel.style.left = `${initialLeft + dx}px`;
+      panel.style.top = `${initialTop + dy}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+  }
+
+  // 商品カードにチェックボタンを追加（会員限定機能）
+  async function addCheckButtons() {
     // チェック用タブでは追加しない
     if (isCheckTab) return;
+
+    // 会員機能が有効でなければ追加しない
+    const isUnlocked = await isPremiumUnlocked();
+    if (!isUnlocked) return;
 
     // メルカリの検索一覧ページでのみ実行
     if (getCurrentSite() !== 'mercari') return;
