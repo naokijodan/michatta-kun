@@ -8,6 +8,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // 非同期レスポンスを使用
   }
+
+  // バックグラウンドで新しいタブを開く（検索ページに留まる）
+  if (request.action === 'openInBackground') {
+    chrome.tabs.create({ url: request.url, active: false });
+  }
 });
 
 async function fetchItemDetailsInBackground(itemId, itemUrl) {

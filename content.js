@@ -386,43 +386,25 @@
       const timeExpressions = bodyText.match(/\d+(?:年|[かヶケ]?月|日|時間|分)前/g);
       console.log('[みちゃった君] 時間表現一覧:', timeExpressions);
 
-      // 出品日パターン（複数試行）
-      const listedPatterns = [
-        /出品日[\s\S]{0,20}?(\d+(?:年|[かヶケ]?月|日|時間|分)前)/,
-        /(\d+(?:年|[かヶケ]?月|日|時間|分)前)[\s\S]{0,20}?出品日/,
-        /出品[^\d]{0,10}(\d+(?:年|[かヶケ]?月|日|時間|分)前)/
-      ];
-
-      for (const pattern of listedPatterns) {
-        const match = bodyText.match(pattern);
-        if (match) {
-          const parsed = parseTimeAgo(match[1]);
-          if (parsed) {
-            listedDays = parsed.days;
-            listedText = parsed.text;
-            console.log('[みちゃった君] 出品日:', listedText, '(パターン:', pattern.toString(), ')');
-            break;
-          }
+      // 出品日時パターン（フリマアシスト形式: 出品日時\n日付\nXX日前）
+      const listedMatch = bodyText.match(/出品日時[\s\S]{0,50}?(\d+(?:年|[かヶケ]?月|日|時間|分)前)/);
+      if (listedMatch) {
+        const parsed = parseTimeAgo(listedMatch[1]);
+        if (parsed) {
+          listedDays = parsed.days;
+          listedText = parsed.text;
+          console.log('[みちゃった君] 出品日時:', listedText);
         }
       }
 
-      // 更新日パターン（複数試行）
-      const updatedPatterns = [
-        /更新日[\s\S]{0,20}?(\d+(?:年|[かヶケ]?月|日|時間|分)前)/,
-        /(\d+(?:年|[かヶケ]?月|日|時間|分)前)[\s\S]{0,20}?更新日/,
-        /更新[^\d]{0,10}(\d+(?:年|[かヶケ]?月|日|時間|分)前)/
-      ];
-
-      for (const pattern of updatedPatterns) {
-        const match = bodyText.match(pattern);
-        if (match) {
-          const parsed = parseTimeAgo(match[1]);
-          if (parsed) {
-            updatedDays = parsed.days;
-            updatedText = parsed.text;
-            console.log('[みちゃった君] 更新日:', updatedText, '(パターン:', pattern.toString(), ')');
-            break;
-          }
+      // 更新日時パターン（フリマアシスト形式: 更新日時\n日付\nXX日前）
+      const updatedMatch = bodyText.match(/更新日時[\s\S]{0,50}?(\d+(?:年|[かヶケ]?月|日|時間|分)前)/);
+      if (updatedMatch) {
+        const parsed = parseTimeAgo(updatedMatch[1]);
+        if (parsed) {
+          updatedDays = parsed.days;
+          updatedText = parsed.text;
+          console.log('[みちゃった君] 更新日時:', updatedText);
         }
       }
 
@@ -561,10 +543,10 @@
           closeDetailPanel(e.target.dataset.itemId);
         });
 
-        // 開くボタン
+        // 開くボタン（バックグラウンドで新しいタブを開く）
         if (!isSold) {
           panel.querySelector('.mercari-detail-open-btn').addEventListener('click', () => {
-            window.open(itemUrl, '_blank');
+            chrome.runtime.sendMessage({ action: 'openInBackground', url: itemUrl });
           });
         }
       })
