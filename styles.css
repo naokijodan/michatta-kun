@@ -92,31 +92,41 @@
   opacity: 1;
 }
 
-/* チェックボタン */
-.mercari-check-btn {
+/* 開くボタン - 右上配置 */
+.mercari-open-btn {
   position: absolute;
-  bottom: 8px;
+  top: 8px;
   right: 8px;
-  background-color: rgba(33, 150, 243, 0.95);
+  background-color: rgba(76, 175, 80, 0.9);
   color: white;
   border: none;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: bold;
   cursor: pointer;
-  z-index: 100;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: background-color 0.2s, transform 0.1s;
+  z-index: 100;
 }
 
-.mercari-check-btn:hover {
-  background-color: rgba(25, 118, 210, 1);
+.mercari-open-btn:hover {
+  background-color: rgba(56, 142, 60, 1);
   transform: scale(1.05);
 }
 
-.mercari-check-btn:active {
+.mercari-open-btn:active {
   transform: scale(0.95);
+}
+
+/* ヒットエリア拡張 */
+.mercari-open-btn::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  bottom: -8px;
+  left: -8px;
 }
 
 /* 詳細パネル */

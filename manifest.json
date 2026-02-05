@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "みちゃった君",
-  "version": "3.0",
+  "version": "3.1.2",
   "description": "以前閲覧した商品を検索一覧でマークします",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage"],
   "background": {
     "service_worker": "background.js"
   },

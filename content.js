@@ -274,7 +274,7 @@
       });
       if (shouldCheck) {
         markViewedItemsInList();
-        addCheckButtons(); // チェックボタンも追加
+        addOpenButtons(); // 開くボタンも追加
       }
     });
 
@@ -656,10 +656,11 @@
           closeDetailPanel(e.target.dataset.itemId);
         });
 
-        // 開くボタン（バックグラウンドで新しいタブを開く）
+        // 開くボタン（バックグラウンドで新しいタブを開く＆パネルを閉じる）
         if (!isSold) {
           panel.querySelector('.mercari-detail-open-btn').addEventListener('click', () => {
             chrome.runtime.sendMessage({ action: 'openInBackground', url: itemUrl });
+            closeDetailPanel(itemId);
           });
         }
 
@@ -744,14 +745,10 @@
     });
   }
 
-  // 商品カードにチェックボタンを追加（会員限定機能）
-  async function addCheckButtons() {
+  // 商品カードに開くボタンを追加（全商品対象）
+  async function addOpenButtons() {
     // チェック用タブでは追加しない
     if (isCheckTab) return;
-
-    // 会員機能が有効でなければ追加しない
-    const isUnlocked = await isPremiumUnlocked();
-    if (!isUnlocked) return;
 
     // メルカリの検索一覧ページでのみ実行
     if (getCurrentSite() !== 'mercari') return;
@@ -771,26 +768,29 @@
                    link.closest('li') ||
                    link.parentElement;
 
-      if (card && !card.querySelector('.mercari-check-btn')) {
+      if (card && !card.querySelector('.mercari-open-btn')) {
         // カードの相対位置設定
         if (getComputedStyle(card).position === 'static') {
           card.style.position = 'relative';
         }
 
-        // チェックボタンを追加
-        const checkBtn = document.createElement('button');
-        checkBtn.className = 'mercari-check-btn';
-        checkBtn.textContent = 'チェック';
-        checkBtn.addEventListener('click', (e) => {
+        // 開くボタンを追加（バックグラウンドで開く）
+        const openBtn = document.createElement('button');
+        openBtn.className = 'mercari-open-btn';
+        openBtn.textContent = '開く';
+        openBtn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          showDetailPanel(itemId, link.href, checkBtn);
+          chrome.runtime.sendMessage({ action: 'openInBackground', url: link.href });
         });
 
-        card.appendChild(checkBtn);
+        card.appendChild(openBtn);
       }
     });
   }
+
+  // チェックボタン機能（非表示・将来復活用にコード保持）
+  // async function addCheckButtons() { ... }
 
   // 初期化
   function init() {
@@ -800,8 +800,8 @@
       return;
     }
 
-    // チェックボタンを追加
-    addCheckButtons();
+    // 開くボタンを追加
+    addOpenButtons();
 
     // 商品ページなら閲覧記録を保存
     checkAndSaveCurrentPage();
