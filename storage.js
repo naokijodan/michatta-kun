@@ -1,18 +1,36 @@
-// Chrome Storage ストレージ抽象化レイヤー
-// chrome.storage.local を使用（全オリジンで共有される）
+// みちゃった君 - Storage API（background.jsへのメッセージラッパー）
+// content script / popup.js から使用
 
-const STORAGE_KEY = 'mercari_viewed_items';
-const ALERT_KEY = 'mercari_alert_settings';
-const PREMIUM_KEY = 'mercari_premium_unlocked';
+// background.jsにメッセージを送信
+function sendStorageMessage(method, params = {}) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { action: 'storage', method, params },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('[みちゃった君] 通信エラー:', chrome.runtime.lastError.message);
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        if (response && response.success !== undefined) {
+          resolve(response);
+        } else {
+          reject(new Error('Invalid response'));
+        }
+      }
+    );
+  });
+}
 
-// 初期化（互換性のため）
+// ==============================
+// 初期化（互換性のため、実際の初期化はbackground.jsで行う）
+// ==============================
+
 function initDB() {
   return Promise.resolve();
 }
 
-// マイグレーション（互換性のため）
-async function migrateFromLegacyStorage() {
-  console.log('[みちゃった君] マイグレーション済み');
+function migrateFromLegacyStorage() {
   return Promise.resolve();
 }
 
@@ -20,52 +38,70 @@ async function migrateFromLegacyStorage() {
 // 閲覧済み商品の操作
 // ==============================
 
-// 閲覧済み商品を全件取得
 async function getViewedItems() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([STORAGE_KEY], (result) => {
-      resolve(result[STORAGE_KEY] || {});
-    });
-  });
+  try {
+    const response = await sendStorageMessage('getViewedItems');
+    return response.items || {};
+  } catch (error) {
+    console.error('[みちゃった君] getViewedItemsエラー:', error);
+    return {};
+  }
 }
 
-// 閲覧済み商品を保存
+async function getViewedItemsBatch(ids) {
+  try {
+    const response = await sendStorageMessage('getViewedItemsBatch', { ids });
+    return response.items || {};
+  } catch (error) {
+    console.error('[みちゃった君] getViewedItemsBatchエラー:', error);
+    return {};
+  }
+}
+
 async function saveViewedItem(itemId) {
-  const items = await getViewedItems();
-  items[itemId] = Date.now();
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [STORAGE_KEY]: items }, resolve);
-  });
+  try {
+    const response = await sendStorageMessage('saveViewedItem', { itemId });
+    return response.success;
+  } catch (error) {
+    console.error('[みちゃった君] saveViewedItemエラー:', error);
+    return false;
+  }
 }
 
-// 閲覧済み商品を一括保存（popup.jsのregisterItems用）
 async function saveViewedItemsBulk(items) {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [STORAGE_KEY]: items }, resolve);
-  });
+  try {
+    const response = await sendStorageMessage('saveViewedItemsBulk', { items });
+    return response.success;
+  } catch (error) {
+    console.error('[みちゃった君] saveViewedItemsBulkエラー:', error);
+    return false;
+  }
 }
 
-// 閲覧済み商品の件数を取得
 async function getViewedItemsCount() {
-  const items = await getViewedItems();
-  return Object.keys(items).length;
+  try {
+    const response = await sendStorageMessage('getViewedItemsCount');
+    return response.count || 0;
+  } catch (error) {
+    console.error('[みちゃった君] getViewedItemsCountエラー:', error);
+    return 0;
+  }
 }
 
-// 閲覧済み商品を全削除
 async function clearAllViewedItems() {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [STORAGE_KEY]: {} }, () => {
-      console.log('[みちゃった君] 全履歴を削除しました');
-      resolve(true);
-    });
-  });
+  try {
+    const response = await sendStorageMessage('clearAllViewedItems');
+    return response.success;
+  } catch (error) {
+    console.error('[みちゃった君] clearAllViewedItemsエラー:', error);
+    return false;
+  }
 }
 
 // ==============================
 // 設定の操作
 // ==============================
 
-// アラート設定を取得
 async function getAlertSettings() {
   const DEFAULT_ALERT_SETTINGS = {
     ratings: 100,
@@ -76,43 +112,55 @@ async function getAlertSettings() {
     shipping8: false
   };
 
-  return new Promise((resolve) => {
-    chrome.storage.local.get([ALERT_KEY], (result) => {
-      const settings = result[ALERT_KEY] || {};
-      resolve({ ...DEFAULT_ALERT_SETTINGS, ...settings });
-    });
-  });
+  try {
+    const response = await sendStorageMessage('getAlertSettings');
+    return response.settings || DEFAULT_ALERT_SETTINGS;
+  } catch (error) {
+    console.error('[みちゃった君] getAlertSettingsエラー:', error);
+    return DEFAULT_ALERT_SETTINGS;
+  }
 }
 
-// アラート設定を保存
 async function saveAlertSettings(settings) {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [ALERT_KEY]: settings }, resolve);
-  });
+  try {
+    const response = await sendStorageMessage('saveAlertSettings', { settings });
+    return response.success;
+  } catch (error) {
+    console.error('[みちゃった君] saveAlertSettingsエラー:', error);
+    return false;
+  }
 }
 
-// 会員機能が解除されているか確認
 async function isPremiumUnlocked() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([PREMIUM_KEY], (result) => {
-      resolve(result[PREMIUM_KEY] === true);
-    });
-  });
+  try {
+    const response = await sendStorageMessage('isPremiumUnlocked');
+    return response.unlocked || false;
+  } catch (error) {
+    console.error('[みちゃった君] isPremiumUnlockedエラー:', error);
+    return false;
+  }
 }
 
-// 会員機能を解除
 async function unlockPremium() {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [PREMIUM_KEY]: true }, resolve);
-  });
+  try {
+    const response = await sendStorageMessage('unlockPremium');
+    return response.success;
+  } catch (error) {
+    console.error('[みちゃった君] unlockPremiumエラー:', error);
+    return false;
+  }
 }
 
+// ==============================
 // グローバルに公開（content.js, popup.jsから使用）
+// ==============================
+
 if (typeof window !== 'undefined') {
   window.MichattaStorage = {
     initDB,
     migrateFromLegacyStorage,
     getViewedItems,
+    getViewedItemsBatch,
     saveViewedItem,
     saveViewedItemsBulk,
     getViewedItemsCount,
