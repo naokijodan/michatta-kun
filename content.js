@@ -782,9 +782,12 @@
     // チェック用タブでは追加しない
     if (isCheckTab) return;
 
-    // メルカリの検索一覧ページでのみ実行
+    // メルカリでのみ実行
     if (getCurrentSite() !== 'mercari') return;
-    if (isProductPage() || isExcludedPage()) return;
+    if (isExcludedPage()) return;
+
+    // 現在のページの商品ID（商品ページの場合、自分自身にはボタンを付けない）
+    const currentItemId = extractItemId(window.location.href);
 
     // 商品リンクを取得
     const productLinks = document.querySelectorAll(
@@ -793,7 +796,8 @@
 
     productLinks.forEach((link) => {
       const itemId = extractItemId(link.href);
-      if (!itemId) return;
+      // 現在のページの商品は除外
+      if (!itemId || itemId === currentItemId) return;
 
       // 親要素（商品カード）を探す
       const card = link.closest('[data-testid="item-cell"]') ||
