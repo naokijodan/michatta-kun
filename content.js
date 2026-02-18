@@ -87,6 +87,7 @@
   // 現在のサイトを判定
   function getCurrentSite() {
     const host = window.location.hostname;
+    if (host.includes('mercari-shops.com')) return 'mercari';
     if (host.includes('mercari.com')) return 'mercari';
     if (host.includes('fril.jp')) return 'rakuma';
     if (host.includes('rakuten.co.jp')) return 'rakuten';
@@ -262,6 +263,7 @@
           card = link;
         } else {
           card = link.closest('[data-testid="item-cell"]') ||  // メルカリ
+                 link.closest('[data-testid="product-box"]') ||  // メルカリShops
                  link.closest('li.Product') ||  // ヤフオク（検索結果）
                  link.closest('.Product') ||    // ヤフオク
                  link.closest('.cf') ||         // ヤフオク検索結果（旧）
@@ -801,6 +803,7 @@
 
       // 親要素（商品カード）を探す
       const card = link.closest('[data-testid="item-cell"]') ||
+                   link.closest('[data-testid="product-box"]') ||  // メルカリShops
                    link.closest('li') ||
                    link.parentElement;
 

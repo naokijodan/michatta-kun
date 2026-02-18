@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "みちゃった君",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "description": "以前閲覧した商品を検索一覧でマークします",
   "permissions": ["storage", "unlimitedStorage"],
   "background": {
@@ -23,6 +23,7 @@
     {
       "matches": [
         "https://jp.mercari.com/*",
+        "https://mercari-shops.com/*",
         "https://*.fril.jp/*",
         "https://*.rakuten.co.jp/*",
         "https://auctions.yahoo.co.jp/*",
